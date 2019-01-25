@@ -143,43 +143,101 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
+            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType != ContentType.Manual))
             {
                 try
                 {
-                    var title = new Title();
-
-                    // Meta contents always have 1 Partition FS section with 1 file in it
-                    IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
-                    var pfs0 = new Pfs(sect);
-                    IStorage file = pfs0.OpenFile(pfs0.Files[0]);
-
-                    var metadata = new Cnmt(file.AsStream());
-                    title.Id = metadata.TitleId;
-                    title.Version = metadata.TitleVersion;
-                    title.Metadata = metadata;
-                    title.MetaNca = nca;
-                    title.Ncas.Add(nca);
-
-                    foreach (CnmtContentEntry content in metadata.ContentEntries)
+                    if (!Titles.TryGetValue(nca.Header.TitleId, out Title title))
                     {
-                        string ncaId = content.NcaId.ToHexString();
+                        title = new Title();
+                    }
 
-                        if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                    if (nca.Header.ContentType == ContentType.Program)
+                    {
+                        var metadata = new Cnmt()
                         {
-                            title.Ncas.Add(contentNca);
-                        }
+                            TitleId = nca.Header.TitleId,
+                            Type = (nca.Header.TitleId & 0x800) == 0 ? TitleType.Application : TitleType.Patch,
+                            ApplicationTitleId = nca.Header.TitleId >> 12 << 12
+                        };
+                        title.Id = metadata.TitleId;
+                        title.Metadata = metadata;
+                        title.MainNca = nca;
+                        title.Ncas.Add(nca);
+                    }
+                    if (nca.Header.ContentType == ContentType.Data)
+                    {
+                        var metadata = new Cnmt()
+                        {
+                            TitleId = nca.Header.TitleId,
+                            Type = (nca.Header.TitleId & 0x800) == 0 ? TitleType.Application : TitleType.Patch,
+                            ApplicationTitleId = nca.Header.TitleId >> 12 << 12
+                        };
+                        title.Id = metadata.TitleId;
+                        title.Metadata = metadata;
+                        title.MainNca = nca;
+                        title.Ncas.Add(nca);
+                    }
+                    else if (nca.Header.ContentType == ContentType.Meta)
+                    {
+                        // Meta contents always have 1 Partition FS section with 1 file in it
+                        IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
+                        var pfs0 = new Pfs(sect);
+                        IStorage file = pfs0.OpenFile(pfs0.Files[0]);
 
-                        switch (content.Type)
+                        var metadata = new Cnmt(file.AsStream());
+                        title.Id = metadata.TitleId;
+                        title.Version = metadata.TitleVersion;
+                        title.Metadata = metadata;
+                        title.MetaNca = nca;
+                        title.Ncas.Add(nca);
+
+                        foreach (CnmtContentEntry content in metadata.ContentEntries)
                         {
-                            case CnmtContentType.Program:
-                            case CnmtContentType.Data:
-                                title.MainNca = contentNca;
-                                break;
-                            case CnmtContentType.Control:
-                                title.ControlNca = contentNca;
-                                break;
+                            string ncaId = content.NcaId.ToHexString();
+
+                            if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                            {
+                                title.Ncas.Add(contentNca);
+                            }
+
+                            switch (content.Type)
+                            {
+                                case CnmtContentType.Program:
+                                case CnmtContentType.Data:
+                                    title.MainNca = contentNca;
+                                    break;
+                                case CnmtContentType.Control:
+                                    title.ControlNca = contentNca;
+                                    break;
+                            }
                         }
+                    }
+                    else if (nca.Header.ContentType == ContentType.Control)
+                    {
+                        var metadata = new Cnmt()
+                        {
+                            TitleId = nca.Header.TitleId,
+                            Type = (nca.Header.TitleId & 0x800) == 0 ? TitleType.Application : TitleType.Patch,
+                            ApplicationTitleId = nca.Header.TitleId >> 12 << 12
+                        };
+                        title.Id = metadata.TitleId;
+                        title.Metadata = metadata;
+                        title.ControlNca = nca;
+                        title.Ncas.Add(nca);
+                    }
+                    else if (nca.Header.ContentType == ContentType.AocData)
+                    {
+                        var metadata = new Cnmt()
+                        {
+                            TitleId = nca.Header.TitleId,
+                            Type = TitleType.AddOnContent,
+                            ApplicationTitleId = nca.Header.TitleId
+                        };
+                        title.Id = metadata.TitleId;
+                        title.Metadata = metadata;
+                        title.MainNca = nca;
+                        title.Ncas.Add(nca);
                     }
 
                     Titles[title.Id] = title;

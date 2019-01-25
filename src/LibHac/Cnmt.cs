@@ -1,12 +1,15 @@
 ﻿using System.IO;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("SwitchFs")]
 
 namespace LibHac
 {
     public class Cnmt
     {
-        public ulong TitleId { get; }
-        public TitleVersion TitleVersion { get; }
-        public TitleType Type { get; }
+        public ulong TitleId { get; internal set; }
+        public TitleVersion TitleVersion { get; internal set; }
+        public TitleType Type { get; internal set; }
         public byte FieldD { get; }
         public int TableOffset { get; }
         public int ContentEntryCount { get; }
@@ -15,8 +18,8 @@ namespace LibHac
         public CnmtContentEntry[] ContentEntries { get; }
         public CnmtContentMetaEntry[] MetaEntries { get; }
 
-        public ulong ApplicationTitleId { get; }
-        public ulong PatchTitleId { get; }
+        public ulong ApplicationTitleId { get; internal set; }
+        public ulong PatchTitleId { get; internal set; }
         public TitleVersion MinimumSystemVersion { get; }
         public TitleVersion MinimumApplicationVersion { get; }
 
