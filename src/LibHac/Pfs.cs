@@ -25,7 +25,7 @@ namespace LibHac
 
             HeaderSize = Header.HeaderSize;
             Files = Header.Files;
-            FileDict = Header.Files.ToDictionary(x => x.Name, x => x);
+            FileDict = Header.Files.GroupBy(x => x.Name).Select(x => x.Last()).ToDictionary(x => x.Name, x => x);
             BaseStorage = storage;
         }
 
