@@ -422,7 +422,7 @@ namespace LibHac
         {
             if (filename == null) return;
 
-            int rightsIdIdx = 0, titleKeyIdx = 1, titleNameIdx = 2, titleVersionIdx = 8;
+            int titleIdIdx = 0, rightsIdIdx = 0, titleKeyIdx = 1, titleNameIdx = 2, titleVersionIdx = 8;
 
             using (var reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
@@ -434,20 +434,28 @@ namespace LibHac
                     // Some people use pipes as delimiters
                     if (line.Contains('|'))
                     {
-                        splitLine = line.Split('|');
+                        splitLine = line.Split(new char[] { '|' }, StringSplitOptions.None);
                     }
                     else
                     {
-                        splitLine = line.Split(',', '=');
+                        splitLine = line.Split(new char[] { ',', '=' }, StringSplitOptions.None);
                     }
 
                     if (splitLine.Length < 2) continue;
 
                     if (!splitLine[0].Trim().TryToBytes(out byte[] _))
                     {
+                        if (splitLine.Contains("id", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleIdIdx = Array.FindIndex(splitLine, x => x.Equals("id", StringComparison.OrdinalIgnoreCase));
+                        }
                         if (splitLine.Contains("rightsId", StringComparer.OrdinalIgnoreCase))
                         {
                             rightsIdIdx = Array.FindIndex(splitLine, x => x.Equals("rightsId", StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (splitLine.Contains("rights_id", StringComparer.OrdinalIgnoreCase))
+                        {
+                            rightsIdIdx = Array.FindIndex(splitLine, x => x.Equals("rights_id", StringComparison.OrdinalIgnoreCase));
                         }
                         if (splitLine.Contains("key", StringComparer.OrdinalIgnoreCase))
                         {
@@ -457,9 +465,17 @@ namespace LibHac
                         {
                             titleKeyIdx = Array.FindIndex(splitLine, x => x.Equals("titleKey", StringComparison.OrdinalIgnoreCase));
                         }
+                        else if (splitLine.Contains("hexadecimal_key_value", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleKeyIdx = Array.FindIndex(splitLine, x => x.Equals("hexadecimal_key_value", StringComparison.OrdinalIgnoreCase));
+                        }
                         if (splitLine.Contains("name", StringComparer.OrdinalIgnoreCase))
                         {
                             titleNameIdx = Array.FindIndex(splitLine, x => x.Equals("name", StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (splitLine.Contains("title_name", StringComparer.OrdinalIgnoreCase))
+                        {
+                            titleNameIdx = Array.FindIndex(splitLine, x => x.Equals("title_name", StringComparison.OrdinalIgnoreCase));
                         }
                         if (splitLine.Contains("version", StringComparer.OrdinalIgnoreCase))
                         {
@@ -469,6 +485,8 @@ namespace LibHac
 
                     try
                     {
+                        splitLine[titleIdIdx].Trim().TryToBytes(out byte[] titleId);
+
                         if (!splitLine[rightsIdIdx].Trim().TryToBytes(out byte[] rightsId))
                         {
                             progress?.LogMessage($"Invalid rights ID \"{splitLine[rightsIdIdx].Trim()}\" in title key file");
@@ -484,13 +502,23 @@ namespace LibHac
                         if (rightsId.Length != TitleKeySize)
                         {
                             progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
-                            continue;
+
+                            if (titleId.Length != TitleKeySize / 2)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                rightsId = new byte[TitleKeySize];
+                                Buffer.BlockCopy(titleId, 0, rightsId, 0, titleId.Length);
+                            }
                         }
 
                         if (titleKey.Length != TitleKeySize)
                         {
                             progress?.LogMessage($"Title key {titleKey.ToHexString()} had incorrect size {titleKey.Length}. (Expected {TitleKeySize})");
-                            continue;
+
+                            titleKey = new byte[TitleKeySize];
                         }
 
                         keyset.TitleKeys[rightsId] = titleKey;
