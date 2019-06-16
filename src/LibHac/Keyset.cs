@@ -499,9 +499,9 @@ namespace LibHac
                             continue;
                         }
 
-                        if (rightsId.Length != TitleKeySize)
+                        if (rightsId.Length != TitleKeySize || rightsId.All(b => b == 0))
                         {
-                            progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize})");
+                            progress?.LogMessage($"Rights ID {rightsId.ToHexString()} had incorrect size {rightsId.Length}. (Expected {TitleKeySize}) or all zeros");
 
                             if (titleId.Length != TitleKeySize / 2)
                             {
