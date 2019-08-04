@@ -21,7 +21,7 @@ namespace LibHac
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
 
-        public SwitchFs(Keyset keyset, IFileSystem fs)
+        public SwitchFs(Keyset keyset, IFileSystem fs, bool leaveOpen)
         {
             Fs = fs;
             Keyset = keyset;
@@ -50,13 +50,13 @@ namespace LibHac
             }
 
             OpenAllSaves();
-            OpenAllNcas();
+            OpenAllNcas(leaveOpen);
             ReadTitles();
             ReadControls();
             CreateApplications();
         }
 
-        private void OpenAllNcas()
+        private void OpenAllNcas(bool leaveOpen)
         {
             string[] files = Fs.GetFileSystemEntries(ContentsDir, "*.nca", SearchOption.AllDirectories);
 
@@ -79,12 +79,12 @@ namespace LibHac
                     if (isNax0)
                     {
                         string sdPath = "/" + Util.GetRelativePath(file, ContentsDir).Replace('\\', '/');
-                        var nax0 = new Nax0(Keyset, storage, sdPath, false);
-                        nca = new Nca(Keyset, nax0.BaseStorage, false);
+                        var nax0 = new Nax0(Keyset, storage, sdPath, leaveOpen);
+                        nca = new Nca(Keyset, nax0.BaseStorage, leaveOpen);
                     }
                     else
                     {
-                        nca = new Nca(Keyset, storage, false);
+                        nca = new Nca(Keyset, storage, leaveOpen);
                     }
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(file);
