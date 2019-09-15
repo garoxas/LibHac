@@ -384,7 +384,7 @@ namespace LibHac
             keyset.DeriveKeys();
         }
 
-        private static void ReadMainKeys(Keyset keyset, string filename, Dictionary<string, KeyValue> keyDict, IProgressReport logger = null)
+        public static void ReadMainKeys(Keyset keyset, string filename, Dictionary<string, KeyValue> keyDict, IProgressReport logger = null)
         {
             if (filename == null) return;
 
@@ -418,7 +418,7 @@ namespace LibHac
             }
         }
 
-        private static void ReadTitleKeys(Keyset keyset, string filename, IProgressReport progress = null)
+        public static void ReadTitleKeys(Keyset keyset, string filename, IProgressReport progress = null)
         {
             if (filename == null) return;
 
@@ -523,7 +523,7 @@ namespace LibHac
 
                         keyset.TitleKeys[rightsId] = titleKey;
 
-                        try
+                        if (splitLine.Length > titleNameIdx)
                         {
                             string titleName = splitLine[titleNameIdx].Trim();
                             if (!String.IsNullOrEmpty(titleName))
@@ -531,16 +531,14 @@ namespace LibHac
                                 keyset.TitleNames[rightsId] = titleName;
                             }
                         }
-                        catch (IndexOutOfRangeException) { }
 
-                        try
+                        if (splitLine.Length > titleVersionIdx)
                         {
                             if (UInt32.TryParse(splitLine[titleVersionIdx].Trim(), out uint titleVersion))
                             {
                                 keyset.TitleVersions[rightsId] = titleVersion;
                             }
                         }
-                        catch (IndexOutOfRangeException) { }
                     }
                     catch (IndexOutOfRangeException) { }
                 }
