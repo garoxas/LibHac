@@ -5,6 +5,7 @@ using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.FsSystem.Save;
 using LibHac.FsService.Creators;
+using LibHac.Ncm;
 using LibHac.Spl;
 using RightsId = LibHac.Fs.RightsId;
 
@@ -28,6 +29,166 @@ namespace LibHac.FsService
             FsCreators = fsCreators;
             ExternalKeys = externalKeys ?? new ExternalKeySet();
             DeviceOperator = deviceOperator;
+        }
+
+        public Result OpenFileSystem(out IFileSystem fileSystem, U8Span path, FileSystemProxyType type,
+            bool canMountSystemDataPrivate, TitleId titleId)
+        {
+            fileSystem = default;
+
+            U8Span path2 = path;
+
+            Result rc = OpenFileSystemFromMountName(ref path2, out IFileSystem baseFileSystem, out bool successQQ,
+                out MountNameInfo mountNameInfo);
+            if (rc.IsFailure()) return rc;
+
+            if (!successQQ)
+                return ResultFs.InvalidArgument.Log();
+
+            if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
+            {
+                rc = OpenGameCardFileSystem(out fileSystem, new GameCardHandle(mountNameInfo.GcHandle),
+                    GameCardPartition.Logo);
+
+                if (rc.IsSuccess())
+                    return Result.Success;
+
+                if (rc != ResultFs.PartitionNotFound)
+                    return rc;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Stores info obtained by parsing a common mount name.
+        /// </summary>
+        private struct MountNameInfo
+        {
+            public bool IsGameCard;
+            public int GcHandle;
+            public bool IsHostFs;
+            public bool Field9;
+        }
+
+        private Result OpenFileSystemFromMountName(ref U8Span path, out IFileSystem fileSystem, out bool successQQ,
+            out MountNameInfo info)
+        {
+            fileSystem = default;
+
+            info = new MountNameInfo();
+            successQQ = true;
+
+            if (StringUtils.Compare(path, CommonMountNames.GameCardMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SystemContentMountName.Length);
+
+                info.IsGameCard = true;
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SystemContentMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SystemContentMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.System);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.UserContentMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.UserContentMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.User);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SdCardContentMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SdCardContentMountName.Length);
+
+                Result rc = OpenContentStorageFileSystem(out fileSystem, ContentStorageId.SdCard);
+                if (rc.IsFailure()) return rc;
+
+                info.Field9 = true;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.CalibrationPartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.CalibrationPartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.CalibrationFile);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SafePartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SafePartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.SafeMode);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.UserPartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.UserPartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.User);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SystemPartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SystemPartitionMountName.Length);
+
+                Result rc = OpenBisFileSystem(out fileSystem, string.Empty, BisPartitionId.System);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.SdCardMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.SdCardMountName.Length);
+
+                Result rc = OpenSdCardFileSystem(out fileSystem);
+                if (rc.IsFailure()) return rc;
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.HostMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.HostMountName.Length);
+
+                info.IsHostFs = true;
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else if (StringUtils.Compare(path, CommonMountNames.RegisteredUpdatePartitionMountName) == 0)
+            {
+                path = path.Slice(CommonMountNames.RegisteredUpdatePartitionMountName.Length);
+
+                info.Field9 = true;
+
+                throw new NotImplementedException();
+            }
+
+            else
+            {
+                return ResultFs.PathNotFound.Log();
+            }
+
+            if (StringUtils.GetLength(path, FsPath.MaxLength) == 0)
+            {
+                successQQ = false;
+            }
+
+            return Result.Success;
         }
 
         public Result OpenBisFileSystem(out IFileSystem fileSystem, string rootPath, BisPartitionId partitionId)
@@ -115,38 +276,38 @@ namespace LibHac.FsService
             switch (storageId)
             {
                 case CustomStorageId.SdCard:
-                {
-                    Result rc = FsCreators.SdFileSystemCreator.Create(out IFileSystem sdFs);
-                    if (rc.IsFailure()) return rc;
+                    {
+                        Result rc = FsCreators.SdFileSystemCreator.Create(out IFileSystem sdFs);
+                        if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
-                    string subDirName = $"/{NintendoDirectoryName}/{customStorageDir}";
+                        string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.SdCard);
+                        string subDirName = $"/{NintendoDirectoryName}/{customStorageDir}";
 
-                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, sdFs, subDirName, true);
-                    if (rc.IsFailure()) return rc;
+                        rc = Util.CreateSubFileSystem(out IFileSystem subFs, sdFs, subDirName, true);
+                        if (rc.IsFailure()) return rc;
 
-                    rc = FsCreators.EncryptedFileSystemCreator.Create(out IFileSystem encryptedFs, subFs,
-                        EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
-                    if (rc.IsFailure()) return rc;
+                        rc = FsCreators.EncryptedFileSystemCreator.Create(out IFileSystem encryptedFs, subFs,
+                            EncryptedFsKeyId.CustomStorage, SdEncryptionSeed);
+                        if (rc.IsFailure()) return rc;
 
-                    fileSystem = encryptedFs;
-                    return Result.Success;
-                }
+                        fileSystem = encryptedFs;
+                        return Result.Success;
+                    }
                 case CustomStorageId.User:
-                {
-                    Result rc = FsCreators.BuiltInStorageFileSystemCreator.Create(out IFileSystem userFs, string.Empty,
-                        BisPartitionId.User);
-                    if (rc.IsFailure()) return rc;
+                    {
+                        Result rc = FsCreators.BuiltInStorageFileSystemCreator.Create(out IFileSystem userFs, string.Empty,
+                            BisPartitionId.User);
+                        if (rc.IsFailure()) return rc;
 
-                    string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.User);
-                    string subDirName = $"/{customStorageDir}";
+                        string customStorageDir = CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.User);
+                        string subDirName = $"/{customStorageDir}";
 
-                    rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
-                    if (rc.IsFailure()) return rc;
+                        rc = Util.CreateSubFileSystem(out IFileSystem subFs, userFs, subDirName, true);
+                        if (rc.IsFailure()) return rc;
 
-                    fileSystem = subFs;
-                    return Result.Success;
-                }
+                        fileSystem = subFs;
+                        return Result.Success;
+                    }
                 default:
                     return ResultFs.InvalidArgument.Log();
             }
