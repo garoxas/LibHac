@@ -12,7 +12,7 @@ namespace LibHac.Fs.Shim
         public static Result CreateSaveData(this FileSystemClient fs, TitleId titleId, UserId userId, TitleId ownerId,
             long size, long journalSize, uint flags)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -48,7 +48,7 @@ namespace LibHac.Fs.Shim
         public static Result CreateSaveData(this FileSystemClient fs, TitleId titleId, UserId userId, TitleId ownerId,
             long size, long journalSize, HashSalt hashSalt, uint flags)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -84,7 +84,7 @@ namespace LibHac.Fs.Shim
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId,
             ulong saveDataId, UserId userId, TitleId ownerId, long size, long journalSize, uint flags)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -142,7 +142,7 @@ namespace LibHac.Fs.Shim
 
         public static Result DeleteSaveData(this FileSystemClient fs, ulong saveDataId)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -153,7 +153,7 @@ namespace LibHac.Fs.Shim
 
         public static Result DeleteSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            return fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            return fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -170,7 +170,7 @@ namespace LibHac.Fs.Shim
             SaveDataFilter tempFilter = filter;
             var tempInfo = new SaveDataInfo();
 
-            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -200,7 +200,7 @@ namespace LibHac.Fs.Shim
         {
             var tempIterator = new SaveDataIterator();
 
-            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -224,7 +224,7 @@ namespace LibHac.Fs.Shim
             var tempIterator = new SaveDataIterator();
             SaveDataFilter tempFilter = filter;
 
-            Result result = fs.RunOperationWithAccessLog(LocalAccessLogMode.System,
+            Result result = fs.RunOperationWithAccessLog(AccessLogTarget.System,
                 () =>
                 {
                     IFileSystemProxy fsProxy = fs.GetFileSystemProxyServiceObject();
@@ -268,7 +268,7 @@ namespace LibHac.Fs.Shim
 
             Span<byte> byteBuffer = MemoryMarshal.Cast<SaveDataInfo, byte>(buffer);
 
-            if (FsClient.IsEnabledAccessLog(LocalAccessLogMode.System))
+            if (FsClient.IsEnabledAccessLog(AccessLogTarget.System))
             {
                 TimeSpan startTime = FsClient.Time.GetCurrent();
                 rc = Reader.ReadSaveDataInfo(out readCount, byteBuffer);
