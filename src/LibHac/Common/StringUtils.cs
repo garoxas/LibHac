@@ -69,6 +69,39 @@ namespace LibHac.Common
             return 0;
         }
 
+        public static int CompareCaseInsensitive(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2)
+        {
+            int maxLen = Math.Min(s1.Length, s2.Length);
+
+            return Compare(s1, s2, maxLen);
+        }
+
+        public static int CompareCaseInsensitive(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, int maxLen)
+        {
+            for (int i = 0; i < maxLen; i++)
+            {
+                byte c1 = ToLowerAsciiInvariant(s1[i]);
+                byte c2 = ToLowerAsciiInvariant(s2[i]);
+
+                if (c1 != c2)
+                    return c1 - c2;
+
+                if (c1 == 0)
+                    return 0;
+            }
+
+            return 0;
+        }
+
+        private static byte ToLowerAsciiInvariant(byte c)
+        {
+            if ((uint)(c - 'A') <= (uint)('Z' - 'A'))
+            {
+                c = (byte)(c | 0x20);
+            }
+            return c;
+        }
+
         /// <summary>
         /// Concatenates 2 byte strings.
         /// </summary>
