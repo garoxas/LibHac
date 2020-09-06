@@ -13,7 +13,7 @@ using RightsId = LibHac.Fs.RightsId;
 
 namespace LibHac.FsSrv
 {
-    public class FileSystemProxyCore
+    public class FileSystemProxyCoreImpl
     {
         internal FileSystemProxyConfiguration Config { get; }
         private FileSystemCreators FsCreators => Config.FsCreatorInterfaces;
@@ -32,7 +32,7 @@ namespace LibHac.FsSrv
 
         internal ISaveDataIndexerManager SaveDataIndexerManager { get; private set; }
 
-        public FileSystemProxyCore(FileSystemProxyConfiguration config, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
+        public FileSystemProxyCoreImpl(FileSystemProxyConfiguration config, ExternalKeySet externalKeys, IDeviceOperator deviceOperator)
         {
             Config = config;
             ProgramRegistry = new ProgramRegistryImpl(Config.ProgramRegistryServiceImpl);
