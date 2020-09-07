@@ -303,6 +303,17 @@ Module,DescriptionStart,DescriptionEnd,Name,Summary
 2,6905,,NotMounted,
 2,6906,,SaveDataIsExtending,
 
+8,2,,ProgramNotFound,
+8,3,,DataNotFound,
+8,4,,UnknownStorageId,
+8,5,,LocationResolverNotFound,
+8,6,,HtmlDocumentNotFound,
+8,7,,AddOnContentNotFound,
+8,8,,ControlNotFound,
+8,9,,LegalInformationNotFound,
+8,10,,DebugProgramNotFound,
+8,90,,TooManyRegisteredPaths,
+
 9,1,,TooLongArgument,
 9,2,,TooManyArguments,
 9,3,,TooLargeMeta,
