@@ -31,5 +31,25 @@ namespace LibHac.FsSrv.Creators
 
             return Result.Success;
         }
+
+        public Result Create(out ReferenceCountedDisposable<IFileSystem> encryptedFileSystem, ReferenceCountedDisposable<IFileSystem> baseFileSystem,
+            EncryptedFsKeyId keyId, in EncryptionSeed encryptionSeed)
+        {
+            encryptedFileSystem = default;
+
+            if (keyId < EncryptedFsKeyId.Save || keyId > EncryptedFsKeyId.CustomStorage)
+            {
+                return ResultFs.InvalidArgument.Log();
+            }
+
+            // todo: "proper" key generation instead of a lazy hack
+            Keyset.SetSdSeed(encryptionSeed.Value.ToArray());
+
+            // Todo: pass ReferenceCountedDisposable to AesXtsFileSystem
+            var fs = new AesXtsFileSystem(baseFileSystem.AddReference().Target, Keyset.SdCardKeys[(int)keyId], 0x4000);
+            encryptedFileSystem = new ReferenceCountedDisposable<IFileSystem>(fs);
+
+            return Result.Success;
+        }
     }
 }

@@ -41,12 +41,16 @@ namespace LibHac
         public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem contentDirFs, concatFs, "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+
+            var contentDirFs = new SubdirectoryFileSystem(concatFs);
+            contentDirFs.Initialize("/Nintendo/Contents".ToU8String()).ThrowIfFailure();
 
             AesXtsFileSystem encSaveFs = null;
             if (fileSystem.DirectoryExists("/Nintendo/save"))
             {
-                SubdirectoryFileSystem.CreateNew(out SubdirectoryFileSystem saveDirFs, concatFs, "/Nintendo/save".ToU8String()).ThrowIfFailure();
+                var saveDirFs = new SubdirectoryFileSystem(concatFs);
+                saveDirFs.Initialize("/Nintendo/save".ToU8String()).ThrowIfFailure();
+
                 encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
             }
 
